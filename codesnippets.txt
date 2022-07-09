@@ -1,0 +1,31 @@
+#script creates an inventory file
+echo "[all]" > inventory
+#Script to Query EC2 for Instances and Output to File
+aws ec2 describe-instances \
+   --query 'Reservations[*].Instances[*].PublicIpAddress' \
+   --output text >> inventory
+
+#remote control using ansible
+https://classroom.udacity.com/nanodegrees/nd9991-alg-t2/parts/cd0649/modules/a1931550-781e-4305-931d-d988c8322388/lessons/236af8ed-b040-45dc-ae22-89c8f66c1d36/concepts/107200f8-de9e-4965-8eb2-f5819569586a   
+
+
+#infrastracture creation
+https://classroom.udacity.com/nanodegrees/nd9991-alg-t2/parts/cd0649/modules/a1931550-781e-4305-931d-d988c8322388/lessons/236af8ed-b040-45dc-ae22-89c8f66c1d36/concepts/adf70d5b-b5c7-4c86-a8d0-580d77e05fab
+
+To Recap, You Were Able To...
+   Learn what Configuration Management Tools are and How to Use Them
+   Design an Ansible Playbook
+   Control a Remote Machine with an Ansible Playbook
+   Build an Ansible Inventory File
+   Make Various Types of CD Jobs in our CI/CD Pipeline
+   Create Infrastructure
+   Configure Infrastructure
+   Deploy Production Artifacts
+   Smoke Testing
+   Rollback
+   Promoting to Production
+
+
+#set up alerts
+https://classroom.udacity.com/nanodegrees/nd9991-alg-t2/parts/cd0649/modules/a1931550-781e-4305-931d-d988c8322388/lessons/8c74510f-8546-4580-ad15-c45214946cde/concepts/f659d007-cc03-4012-8960-536c5a8ac979
+   
