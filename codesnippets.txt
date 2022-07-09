@@ -28,4 +28,8 @@ To Recap, You Were Able To...
 
 #set up alerts
 https://classroom.udacity.com/nanodegrees/nd9991-alg-t2/parts/cd0649/modules/a1931550-781e-4305-931d-d988c8322388/lessons/8c74510f-8546-4580-ad15-c45214946cde/concepts/f659d007-cc03-4012-8960-536c5a8ac979
-   
+
+
+Scope
+1. Configure server .cicleci/ansible/roles   
+2. Deploy server .cicleci/ansible/roles
