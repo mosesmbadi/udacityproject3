@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   slack: circleci/slack@4.1
+
 jobs:
   deploy:
     docker:
@@ -351,27 +352,27 @@ workflows:
       - scan-frontend:
           requires: [build-frontend]
             - test
-      - slack/on-hold:
-          context: UdacityProject3
-          filters:
-            tags:
-              only: /^v.*/
-          requires:
-            - test
-      - pause_workflow:
-          filters:
-            tags:
-              only: /^v.*/
-          requires:
-            - test
-            - slack/on-hold
-          type: approval
-      - deploy:
-          filters:
-            tags:
-              only: /^v.*/
-          requires:
-            - pause_workflow    
+      # - slack/on-hold:
+      #     context: SLACK_ACCESS_TOKEN
+      #     filters:
+      #       tags:
+      #         only: /^v.*/
+      #     requires:
+      #       - test
+      # - pause_workflow:
+      #     filters:
+      #       tags:
+      #         only: /^v.*/
+      #     requires:
+      #       - test
+      #       - slack/on-hold
+      #     type: approval
+      # - deploy:
+      #     filters:
+      #       tags:
+      #         only: /^v.*/
+      #     requires:
+      #       - pause_workflow    
 #       - deploy-infrastructure:
 #           requires: [test-frontend, test-backend, scan-frontend, scan-backend]
 #           filters:
