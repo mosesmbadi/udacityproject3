@@ -352,7 +352,7 @@ workflows:
           requires: [build-frontend]
             - test
       - slack/on-hold:
-          context: UdacityProject3EnvVar
+          context: UdacityProject3
           filters:
             tags:
               only: /^v.*/

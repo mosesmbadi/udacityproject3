@@ -50,7 +50,7 @@ jobs:
 #               exit 1
 #             fi
             
-jobs:
+
   build-frontend:
     docker:
       - image: circleci/node:13.8.0
@@ -350,20 +350,21 @@ workflows:
           requires: [build-backend]
       - scan-frontend:
           requires: [build-frontend]
-            - test
       - slack/on-hold:
-          context: UdacityProject3EnvVar
+          context: UdacityProject3
           filters:
             tags:
               only: /^v.*/
           requires:
-            - test
+            - test-frontend
+            - test-backend
       - pause_workflow:
           filters:
             tags:
               only: /^v.*/
           requires:
-            - test
+            - test-frontend
+            - test-backend
             - slack/on-hold
           type: approval
       - deploy:
