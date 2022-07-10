@@ -331,30 +331,7 @@ workflows:
       - scan-backend:
           requires: [build-backend]
       - scan-frontend:
-          requires: [build-frontend]
-      - slack/on-hold:
-          context: UdacityProject3EnvVar
-          filters:
-            tags:
-              only: /^v.*/
-          requires:
-            - test-frontend
-            - test-backend
-      - pause_workflow:
-          filters:
-            tags:
-              only: /^v.*/
-          requires:
-            - test-frontend
-            - test-backend
-            - slack/on-hold
-          type: approval
-      - deploy:
-          filters:
-            tags:
-              only: /^v.*/
-          requires:
-            - pause_workflow    
+          requires: [build-frontend] 
 #       - deploy-infrastructure:
 #           requires: [test-frontend, test-backend, scan-frontend, scan-backend]
 #           filters:
