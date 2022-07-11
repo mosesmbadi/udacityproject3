@@ -15,6 +15,8 @@
 
 ### URLs
 Github: https://github.com/mosesmbadi/udacityproject3
+s3 Bucket (URL02): http://udapeople-dd76877.s3-website-us-east-1.amazonaws.com
+
 
 
 ### License
