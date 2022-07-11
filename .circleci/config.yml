@@ -57,7 +57,7 @@ commands:
           name: Revert migrations
           when: on_fail
           command: |
-              cd backend
+              cd ~/udapeople/backend
               npm install    
               npm run migrations:revert
 
