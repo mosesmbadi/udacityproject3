@@ -8,6 +8,14 @@
 - [Ansible](https://www.ansible.com/) - Configuration management tool
 - [Prometheus](https://prometheus.io/) - Monitoring tool
 
-### License
 
+### NOTES FOR THE REVIEWER
+1. I couldn't get the build error for screenshot5 (Ensure backend infrastructure) Your guide was a little unclear so I watched a tutorial on that specific topic and created it.
+
+
+### URLs
+Github: https://github.com/mosesmbadi/udacityproject3
+
+
+### License
 [License](LICENSE.md)
