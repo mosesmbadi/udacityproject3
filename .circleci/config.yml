@@ -177,7 +177,7 @@ jobs:
           paths:
             - project/.circleci/ansible/inventory.txt
             
-      - destroy-environment              
+#      - destroy-environment              
 #       - run:
 #           name: Add back-end ip to ansible inventory
 #           command: |
