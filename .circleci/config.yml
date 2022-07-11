@@ -141,7 +141,11 @@ jobs:
   deploy-infrastructure:
     docker:
 <<<<<<< HEAD
+<<<<<<< HEAD
       image: amazon/aws-cli
+=======
+      - image: amazon/aws-cli:latest
+>>>>>>> 2138a4fdbd770f2bc43c35f588c9eb9a4b8747bd
 =======
       - image: amazon/aws-cli:latest
 >>>>>>> 2138a4fdbd770f2bc43c35f588c9eb9a4b8747bd
