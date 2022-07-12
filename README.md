@@ -14,9 +14,7 @@
 2. I had issues with url of kvdb, so I commented them out while I try to get a response from my colleague regarding the errors.\
 
 
-### URLs
-Github: https://github.com/mosesmbadi/udacityproject3
-s3 Bucket (URL02): http://udapeople-dd76877.s3-website-us-east-1.amazonaws.com
+
 
 ### TODOs
 1. Get backend endpoint screenshots
