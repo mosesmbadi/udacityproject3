@@ -1,7 +1,7 @@
 ---
   - name: "install nodejs."
     become: yes
-    yum:
+    apt:
       name: ["nodejs", "npm"]
       state: latest
       update_cache: yes
