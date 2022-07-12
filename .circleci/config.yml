@@ -310,7 +310,7 @@ jobs:
          command: |
             cd backend
             npm run build
-            tar -cf artifact.tar ./backend
+            tar -cf artifact.tar /backend
             cd ..
             cp backend/artifact.tar .circleci/ansible/roles/deploy/files   
       - run:
