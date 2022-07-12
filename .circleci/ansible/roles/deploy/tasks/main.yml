@@ -17,13 +17,13 @@
   
   - name: Copy backend dist files web server
     copy:
-      remote_src: /root/project/artifact.tar.gz
-      dest: /home/ubuntu/artifact.tar.gz
+      src: /root/project/artifact.tar
+      dest: /home/ubuntu/artifact.tar
 
   - name: Uncompress Backend
     shell: |
       cd /home/ubuntu
-      tar xvzf artifact.tar.gz -C .
+      tar xvzf artifact.tar -C .
       ls -la
       
   - name: Build
