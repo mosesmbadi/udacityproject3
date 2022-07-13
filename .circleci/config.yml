@@ -170,52 +170,54 @@ jobs:
           key: backend-scan                      
 
   deploy-infrastructure:
-    docker:
-      - image: amazon/aws-cli
+    executor: aws
     steps:
       - checkout
-      - install_awscli
-      - run: 
-          name: Ensure back-end infrastructure exists
-          command: | 
-            pwd
-            ls -la
-            aws cloudformation deploy \
-              --template-file .circleci/files/backend.yml \
-              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID}" \
-              --tags project=udapeople \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}"
-            PUBLICDNS=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress' --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID}" --output text)
-            echo ${PUBLICDNS}
-            echo ${CIRCLE_WORKFLOW_ID}
-            curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" --request PUT --data ${PUBLICDNS} https://api.memstash.io/values/public_dns
-               
       - run:
-          name: Ensure front-end infrastructure exist
-          command: | 
-            pwd
-            ls -la
+          name: Install dependencies
+          command: yum install -y tar gzip
+      - run:
+          name: Deploy backend infrastructure
+          working_directory: ./.circleci/files
+          command: |
             aws cloudformation deploy \
-              --template-file .circleci/files/frontend.yml \
-              --tags project=udapeople \
+              --template-file ./backend.yml \
+              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" \
+              --tags project=udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}
+      # - run:
+      #     name: Save backend URL in memstash
+      #     command: |
+      #       BACKEND_IP=$(aws ec2 describe-instances \
+      #         --query 'Reservations[*].Instances[*].PublicIpAddress' \
+      #         --filters "Name=tag:project,Values=udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+      #         --output text)
+      #       curl -H "Content-Type: text/plain" -H "token: 1e288415-cfc8-4a0a-a23c-087eb7cd7678" --request PUT --data "http://$BACKEND_IP:3030" https://api.memstash.io/values/BACKEND_URL
+      - run:
+          name: Deploy frontend infrastructure
+          working_directory: ./.circleci/files
+          command: |
+            aws cloudformation deploy \
+              --template-file ./frontend.yml \
               --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" 
-              
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" \
+              --tags project=udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}
       - run:
-          name: Add back-end ip to ansible inventory
+          name: Add backend ip to ansible inventory
+          working_directory: ./.circleci/ansible
           command: |
             aws ec2 describe-instances \
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
-              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID}" \
-              --output text >> .circleci/ansible/inventory.txt
-              yum -y install tar gzip jq npm
-              cat ".circleci/ansible/inventory.txt"
+              --filters "Name=tag:project,Values=udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --output text >> inventory
+            cat inventory
       - persist_to_workspace:
           root: .
           paths:
-            - .circleci/ansible
-      - destroy-environment
-                
+            - .circleci/ansible/inventory
+      - destroy_environment:
+          id: ${CIRCLE_WORKFLOW_ID:0:7}
+          when: on_fail
 
   configure-infrastructure:
     docker:
@@ -223,7 +225,7 @@ jobs:
     steps:
       - checkout
       - add_ssh_keys:
-          fingerprints: [9d:77:a5:ae:4c:ef:5c:fd:16:cf:e7:01:39:5e:ee:a1:00:d2:be:d3]
+          fingerprints: [5e:8b:bc:bb:1b:08:ab:90:53:83:06:d4:18:a7:b2:b9]
       - attach_workspace:
           at: .
       - run:
