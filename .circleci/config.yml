@@ -171,22 +171,30 @@ jobs:
 
   deploy-infrastructure:
     docker:
-      - image: cimg/base:stable
+      - image: amazon/aws-cli
     steps:
       - checkout
       - install_awscli
       - run: 
           name: Ensure back-end infrastructure exists
           command: | 
+            pwd
+            ls -la
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
+              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID}" \
               --tags project=udapeople \
-              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}"
+            PUBLICDNS=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress' --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID}" --output text)
+            echo ${PUBLICDNS}
+            echo ${CIRCLE_WORKFLOW_ID}
+            curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" --request PUT --data ${PUBLICDNS} https://api.memstash.io/values/public_dns
                
       - run:
           name: Ensure front-end infrastructure exist
           command: | 
+            pwd
+            ls -la
             aws cloudformation deploy \
               --template-file .circleci/files/frontend.yml \
               --tags project=udapeople \
@@ -196,134 +204,156 @@ jobs:
       - run:
           name: Add back-end ip to ansible inventory
           command: |
-            BACKEND_PUBLIC_IP=$(aws ec2 describe-instances \
-              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+            aws ec2 describe-instances \
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
-              --output text)
-            
-            echo $BACKEND_PUBLIC_IP >> .circleci/ansible/inventory.txt
-            echo "IP=$BACKEND_PUBLIC_IP"
-            cat .circleci/ansible/inventory.txt
+              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID}" \
+              --output text >> .circleci/ansible/inventory.txt
+              yum -y install tar gzip jq npm
+              cat ".circleci/ansible/inventory.txt"
       - persist_to_workspace:
-          root: ~/
+          root: .
           paths:
-            - project/.circleci/ansible/inventory.txt
-            
+            - .circleci/ansible
       - destroy-environment
                 
 
   configure-infrastructure:
     docker:
-      - image: cimg/base:stable      
+      - image: python:3.7-alpine3.11
     steps:
       - checkout
-      - install_ansible
-      - install_awscli       
       - add_ssh_keys:
-          fingerprints: ["5e:8b:bc:bb:1b:08:ab:90:53:83:06:d4:18:a7:b2:b9"]
+          fingerprints: [9d:77:a5:ae:4c:ef:5c:fd:16:cf:e7:01:39:5e:ee:a1:00:d2:be:d3]
       - attach_workspace:
-          at: ~/
+          at: .
       - run:
-          name: Configure Server
+          name: Install dependencies
           command: |
-             cd .circleci/ansible
-             cat inventory.txt
-             ansible-playbook -i inventory.txt configure-server.yml
-      - destroy-environment     
-
-  run-migrations: 
+            apk add --update ansible
+            pip install awscli
+      - run:
+          name: Create dotenv file
+          command: |
+            cd backend/
+            echo > ".env"
+            echo ENVIRONMENT="production" >> ".env"
+            echo TYPEORM_CONNECTION=$TYPEORM_CONNECTION >> ".env"
+            echo TYPEORM_MIGRATIONS_DIR=$TYPEORM_MIGRATIONS_DIR >> ".env"
+            echo TYPEORM_ENTITIES=$TYPEORM_ENTITIES >> ".env"
+            echo TYPEORM_MIGRATIONS=$TYPEORM_MIGRATIONS >> ".env"
+            echo TYPEORM_HOST=$TYPEORM_HOST >> ".env"
+            echo TYPEORM_PORT=$TYPEORM_PORT >> ".env"
+            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> ".env"
+            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> ".env"
+            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> ".env"
+      - run:
+          name: Configure server
+          command: |
+            cat ".circleci/ansible/inventory.txt"
+            ansible-playbook -i .circleci/ansible/inventory.txt .circleci/ansible/configure-server.yml
+      - destroy-environment
+ 
+  run-migrations:
     docker:
       - image: circleci/node:13.8.0
     steps:
       - checkout
       - run:
+          name: install awscli
+          command: |
+            sudo apt-get update
+            sudo apt-get -y install awscli
+      - run:
           name: Run migrations
           command: |
-            cd backend
-            npm install
-            npm run migrations --force > migrations_dump.txt
-      # - run:
-      #     name: Send migration results to memstash
-      #     command: |
-      #       if grep -q "has been executed successfully." ~/project/backend/migrations_dump.txt
-      #       then
-      #         curl https://kvdb.io/SZuCPbRk687HMvEgUZgV1M/migration_${CIRCLE_WORKFLOW_ID:0:7} -d '1'
-      #       fi
-      - destroy-environment
+            cd backend/
+            echo > ".env"
+            echo ENVIRONMENT="production" >> ".env"
+            echo TYPEORM_CONNECTION=$TYPEORM_CONNECTION >> ".env"
+            echo TYPEORM_MIGRATIONS_DIR=$TYPEORM_MIGRATIONS_DIR >> ".env"
+            echo TYPEORM_ENTITIES=$TYPEORM_ENTITIES >> ".env"
+            echo TYPEORM_MIGRATIONS=$TYPEORM_MIGRATIONS >> ".env"
+            echo TYPEORM_HOST=$TYPEORM_HOST >> ".env"
+            echo TYPEORM_PORT=$TYPEORM_PORT >> ".env"
+            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> ".env"
+            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> ".env"
+            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> ".env"
+            npm i
+            npm run migrations >> result.txt
+      - run:
+          name: Send migration results to memstash
+          command: |
+            cd backend/
+            cat result.txt
+            RESULT=$(grep -Fc "has been executed successfully" result.txt)
+            curl -H "Content-Type: text/plain" -H "token: migration-${CIRCLE_WORKFLOW_ID}" --request PUT --data ${RESULT} https://api.memstash.io/values/migration_result
       - revert-migrations
- 
+      - destroy-environment
+
+
   deploy-frontend:
     docker:
-      - image: cimg/base:stable
+      - image: amazon/aws-cli
     steps:
       - checkout
-      - install_awscli
-      - install-nodejs
       - run:
           name: Install dependencies
           command: |
-            cd frontend
-            npm install
+            yum install -y gcc-c++ make 
+            curl -fsSL https://rpm.nodesource.com/setup_lts.x | bash -
+            yum install -y nodejs
+            node -v
+            npm -v
       - run:
           name: Get backend url
           command: |
-            BACKEND_PUBLIC_IP=$(aws ec2 describe-instances \
-              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --query 'Reservations[*].Instances[*].PublicIpAddress' \
-              --output text)
-            echo "API_URL=http://${BACKEND_PUBLIC_IP}:3030" >> frontend/.env
-            cat frontend/.env
+            cd frontend/
+            BACKENDIP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/public_dns)
+            echo API_URL="http://${BACKENDIP}:3030" > ".env"
+            cat .env
       - run:
           name: Deploy frontend objects
           command: |
             cd frontend
-            npm install
+            npm i
             npm run build
-            tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
-            aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
-            echo "workfkow=$CIRCLE_WORKFLOW_ID:0:7"
+            aws s3 sync ./dist s3://"udapeople-${CIRCLE_WORKFLOW_ID}"
+      - revert-migrations
       - destroy-environment
-      - revert-migrations  
 
-    
   deploy-backend:
     docker:
-      - image: cimg/base:stable
+      - image: python:3.7-alpine3.11      
     steps:
       - checkout
-      - install_awscli      
-      - install_ansible
-      - install-nodejs
       - add_ssh_keys:
-          fingerprints: ["5e:8b:bc:bb:1b:08:ab:90:53:83:06:d4:18:a7:b2:b9"]          
+          fingerprints: [5e:8b:bc:bb:1b:08:ab:90:53:83:06:d4:18:a7:b2:b9]
       - attach_workspace:
-          at: ~/
-      - restore_cache:
-          keys: [backend-deps]
+          at: .
       - run:
           name: Install dependencies
           command: |
-            cd backend
-            npm install
+            apk add --update ansible
+            apk add --update npm
+            apk add --update curl
+            pip3 --no-cache-dir install awscli
       - run:
-         name: Package Backend
-         command: |
+          name: Build Backend
+          command: |
             cd backend
+            npm i
             npm run build
-            tar -cf artifact.tar
-            cd ..
-            cp backend/artifact.tar .circleci/ansible/roles/deploy/files   
+      - run:
+          name: "tar archiv"
+          command: |
+            tar -cf backend.tar ./backend
       - run:
           name: Deploy backend
           command: |
-            export TYPEORM_MIGRATIONS_DIR=./migrations
-            export TYPEORM_ENTITIES=./modules/domain/**/*.entity{.ts,.js}             
-            export TYPEORM_MIGRATIONS=./migrations/*.ts
-            cd .circleci/ansible
-            cat inventory.txt
-            ansible-playbook -i inventory.txt deploy-backend.yml       
-      - destroy-environment
-      - revert-migrations              
+            ansible-playbook -i .circleci/ansible/inventory.txt .circleci/ansible/deploy-backend.yml
+      - revert-migrations
+      - destroy-environment    
+       
 
   smoke-test:
     docker:
